@@ -1,0 +1,271 @@
+1
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Oct 28 13:30:15 2018
+
+@author: acggs
+"""
+
+import pymysql
+
+# Open database connection
+#mysql_config --socket  to get the socket
+
+
+#Create a database for supplierProduct,delete it if it exists
+# it deletes it
+# Also create tables, which are empty initially. The tables will be 
+# populated with data form the command prompt
+
+
+db = pymysql.connect(host="localhost",
+                     user="0000",
+                     passwd="545747464764.",
+                     port=000)
+                   
+
+cursor=db.cursor()
+
+cursor.execute("DROP DATABASE IF EXISTS supplierProduct");
+
+
+#create a database 
+cursor.execute("create database supplierProduct")
+
+#make it current
+cursor.execute("use supplierProduct")
+
+
+
+# Create supplier table
+sql1 = """CREATE TABLE supplier  (
+         id  CHAR(20) NOT NULL primary key,
+         name  CHAR(20),
+         status INT,  
+         city CHAR(20))"""
+
+# Create product table
+sql2 = """CREATE TABLE product (
+         id  CHAR(20) NOT NULL primary key,
+         name  CHAR(20),
+         color CHAR(20),
+         weight  float,  
+         city CHAR(20))"""
+
+#create supplierProduct table
+sql3 = """CREATE TABLE supplierProduct2 (
+         sid   CHAR(20), 
+         foreign key (sid) references supplier(id),
+         pid char(20), 
+         qty INT,
+         foreign key (pid) references product(id),
+         primary key(sid,pid))"""
+         
+
+#this is where the queries are executed
+cursor.execute(sql1)
+cursor.execute(sql2)
+cursor.execute(sql3)
+
+
+
+# disconnect from server
+db.close()
+--------------------------------------------------------------
+2
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Oct 28 13:30:15 2018
+
+@author: acggs
+"""
+import pymysql
+import pandas as pd
+
+# Populate the database with data
+
+
+
+
+# Open database connection
+db = pymysql.connect(host="localhost",
+                     user="root",
+                     passwd="6980123379.Ba.",
+                     port=3307)
+cursor=db.cursor()
+
+
+
+cursor.execute("use supplierProduct")
+
+
+
+#Read Supplier, Product, and SupplierProduct data from CSV
+# Do not read the first line
+# I provide column names
+data = pd.read_csv ('../data-Supplier-Product/supplier2.data', names=['id','name','status','city'],sep=' ', skiprows=1)
+                    
+data2 = pd.read_csv ('../data-Supplier-Product/product2.data', names=['id','name','color','weight','city'],sep=' ', skiprows=1)
+data3 = pd.read_csv ('../data-Supplier-Product/supplierProduct2.data', names=['sid','pid','qty'],sep='  ', skiprows=1)
+
+
+
+
+#Insert supplier data to DB
+#cols will contain a string with all column names: 
+#cols='id,name,status,city'
+cols = ",".join([str(i) for i in data.columns.tolist()])
+
+# Insert DataFrame records one by one to the database
+# INSERT is a SQL command
+# That's te first command
+#"INSERT INTO supplier (id,name,status,city) VALUES ('S1', 'Smith', 20, 'London')"
+for i,row in data.iterrows():
+    sql = "INSERT INTO supplier (" +cols + ") VALUES " + str(tuple (row))  
+    print (sql)
+    cursor.execute(sql)
+    db.commit()
+
+
+#Insert product data to DB
+cols = ",".join([str(i) for i in data2.columns.tolist()])
+# Insert DataFrame recrds one by one.
+for i,row in data2.iterrows():
+    sql = "INSERT INTO product (" +cols + ") VALUES " + str(tuple (row))    
+    cursor.execute(sql)
+    db.commit()
+
+
+
+#Insert supplierproduct data to DB
+cols = ",".join([str(i) for i in data3.columns.tolist()])
+# Insert DataFrame recrds one by one.
+for i,row in data3.iterrows():
+    sql = "INSERT INTO supplierproduct2 (" +cols + ") VALUES " + str(tuple (row))    
+    cursor.execute(sql)
+    db.commit()
+
+
+
+
+# disconnect from server
+db.close()
+----------------------------------------------------------------------------------------
+3
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Oct 29 13:36:59 2018
+
+@author: acggs
+"""
+
+
+# works with windows
+import pymysql
+
+
+
+#Access a database
+
+# Open database connection
+db = pymysql.connect(host="localhost",           #address of the server
+                     user="root",                #user name
+                     passwd="6980123379.Ba.",
+                     port=3307)      #password   
+
+cursor=db.cursor()
+
+
+
+cursor.execute("use supplierProduct")
+
+
+# select columns
+# this a query, but it's only text
+sql1="select id, name from product";
+
+
+sql1="select name, city from sy";
+
+
+#select rows 
+sql2="""select * from product
+      where name='Screw'"""
+      
+#groupby: how many products per city?
+sql3="""select count(id), city from product
+      group by city"""
+  
+#select all suppliers whose name starts with an S
+#%S   starts with S
+#%S   ends with S
+#%S%  have s in any position
+sql4="""select * from supplier
+      where name like '%S'"""
+
+#groupby: how many people per city?
+sql5="""select count(id), city from supplier
+      group by city"""    
+    
+    
+
+    
+sql6="""select supplier.name, product.name from
+        supplier, product, supplierProduct2
+        where supplier.id = supplierProduct2.sid and
+              product.id = supplierProduct2.pid"""
+
+
+
+
+#1.	Display the names of all suppliers, as well as their city
+q1="select name, city from supplier";
+
+#2.	Display all the name of suppliers that start with ‘S’
+q2="select * from supplier where name like 'S%'";
+
+#3.	Count the number of products and the number of unique products based on pname
+q3a="select count(name) from product;"
+q3b="select count(distinct(name)) from product;"
+
+
+#4.	Count the number of Red products
+q4="select count(*) from product where color='red'";
+
+
+#5.	Which is the lightest product?
+# Note it's a nested query:
+# a. start from the end: select min(weight) from product finds the min weight
+# b. then it selects the product with the min weight: select name, weight from product where weight
+q5="select name, weight from product where weight = (select min(weight) from product)";
+
+
+#6.	Sort products by product names, and then by product color
+q6="SELECT * FROM product order by name, color;"
+
+
+#7.	Sort product names by descending order
+q7="SELECT * FROM product order  by name desc"
+
+#8.	Display the number of products for each color;
+q8="select color, count(name) from product group by color"
+
+#9.	What is the name of the supplier that supplied 200 units of product P1?
+q9="""select supplier.name from supplier, supplierProduct2 where 
+            supplierProduct2.qty=200 and 
+            supplierProduct2.pid='P1' and
+            supplierProduct2.sid=supplier.id"""
+
+
+
+# change the argument to run different queries
+cursor.execute(q9)
+result=cursor.fetchall()
+print (result)
+
+
+db.close()
+
