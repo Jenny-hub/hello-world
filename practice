@@ -1,3 +1,104 @@
+cursor.execute(sql)
+db.commit()
+-----------------------------------------------------------------------
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# works with windows
+import pymysql
+#Access a database
+
+# Open database connection
+db = pymysql.connect(host="localhost",
+                     user="ds",
+                     passwd="0019cg!CG!",
+                     unix_socket="/var/run/mysqld/mysqld.sock" )
+cursor=db.cursor()
+
+cursor.execute("use supplierProduct")
+
+
+# select columns
+# this a query, but it's only text
+sql1="select id, name from product";
+
+#select rows 
+sql2="""select * from product
+      where name='Screw'"""
+      
+#groupby: how many products per city?
+sql3="""select count(id), city from product
+      group by city"""
+  
+#select all suppliers whose name starts with an S
+#%S   starts with S
+#%S   ends with S
+#%S%  have s in any position
+sql4="""select * from supplier
+      where name like '%S'"""
+
+#groupby: how many people per city?
+sql5="""select count(id), city from supplier
+      group by city"""    
+    
+   
+sql6="""select supplier.name, product.name from
+        supplier, product, supplierProduct2
+        where supplier.id = supplierProduct2.sid and
+              product.id = supplierProduct2.pid"""
+
+
+#1.	Display the names of all suppliers, as well as their city
+q1="select name, city from supplier";
+
+#2.	Display all the name of suppliers that start with ‘S’
+q2="select * from supplier where name like 'S%'";
+
+#3.	Count the number of products and the number of unique products based on pname
+q3a="select count(name) from product;"
+q3b="select count(distinct(name)) from product;"
+
+
+#4.	Count the number of Red products
+q4="select count(*) from product where color='red'";
+
+
+#5.	Which is the lightest product?
+# Note it's a nested query:
+# a. start from the end: select min(weight) from product finds the min weight
+# b. then it selects the product with the min weight: select name, weight from product where weight
+q5="select name, weight from product where weight = (select min(weight) from product)";
+
+
+#6.	Sort products by product names, and then by product color
+q6="SELECT * FROM product order by name, color;"
+
+
+#7.	Sort product names by descending order
+q7="SELECT * FROM product order  by name desc"
+
+#8.	Display the number of products for each color;
+q8="select color, count(name) from product group by color"
+
+#9.	What is the name of the supplier that supplied 200 units of product P1?
+q9="""select supplier.name from supplier, supplierProduct2 where 
+            supplierProduct2.qty=200 and 
+            supplierProduct2.pid='P1' and
+            supplierProduct2.sid=supplier.id"""
+
+
+
+
+cursor.execute(sql2)
+result=cursor.fetchall()
+print (result)
+
+
+db.close()
+----------------------------------------------------------------------------------
+
+
+
+----------------------------------------------------------------------
 #1. Calculate the min, max and average value for the ‘dept’ column
 diamonds['depth'].min()
 diamonds['depth'].max()
