@@ -28,13 +28,7 @@ sql2="""select * from product
 #groupby: how many products per city?
 sql3="""select count(id), city from product
       group by city"""
-  
-#select all suppliers whose name starts with an S
-#%S   starts with S
-#%S   ends with S
-#%S%  have s in any position
-sql4="""select * from supplier
-      where name like '%S'"""
+
 
 #groupby: how many people per city?
 sql5="""select count(id), city from supplier
