@@ -1,0 +1,27 @@
+#1. Calculate the min, max and average value for the ‘dept’ column
+diamonds['depth'].min()
+diamonds['depth'].max()
+diamonds['depth'].mean()
+
+#2.	List all the ‘cut’ values, each ‘cut’ value should appear once only
+diamonds['cut'].unique()
+
+#3.	Count and print the number of ‘diamonds’ for each cut
+print(diamonds.groupby('cut')['cut'].count())
+
+#4.	Print the number of duplicated rows in the data frame
+print(diamonds.duplicated().sum())
+
+#5.	Remove the columns that are marked with x,y,z from the data frame
+diamonds.drop(['x'],axis=1)
+diamonds.drop(['y'],axis=1)
+diamonds.drop(['z'],axis=1)
+
+#6.	Print the rows for the diamonds where the cut is fair or very good
+#select diamonds where the cut is fair or very good
+diamonds[(diamonds.cut=='Fair') | (diamonds.cut=='Very Good')]
+
+# or alternatively
+a1=diamonds[(diamonds.cut=='Fair')]
+a2=diamonds[(diamonds.cut=='Very good')]
+result=pd.concat([a1,a2])
