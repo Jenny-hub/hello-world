@@ -5,3 +5,107 @@ import seaborn as sns
 
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
+series_a = pd.Series(a)
+
+df_copy = df.copy()
+
+#If we only keep a single column from a df - we can see that it is stored as a series
+x = df['first_name']
+type(x)
+
+#We can add two sets of "[]" in order to force pandas to store it as a df and not a series
+x1 = df[['first_name']]
+type(x1)
+
+
+#Change the index column of the df to be the student name!
+new_data = data.set_index('student')
+
+new_data.loc['Eleni']
+
+#we can also save the filtered data
+data2 = data.loc[data['student'] == 'Eleni']
+----------------------------------------------------
+NULLS
+data.isna().tail(3)
+#NULLS PER COLUMN
+data.isnull().sum()
+
+#ALL NULLS
+data.isnull().sum().sum()
+data.dropna()
+----------------------------------------------------
+#create new column named "code"
+data['code'] = data['student']*2
+
+#create new column named "science_avg"
+data5['sciences_avg'] = (data5['maths']+data5['science'])/2
+#let's create new column called 'science_pass_fail' and fill it based on a condition
+data5.loc[data5['sciences_avg'] >= 50, 'science_pass_fail'] = 'pass'
+--------------------------------------------------------
+#let's replace some value
+data5['semester'].replace(1,'first',inplace=True)
+data5.to_csv('myfile.csv')
+--------------------------------------------------------
+#Change the datatype of the 'semester' column
+#we can do this like this
+df['semester'] = df['semester'].astype(str)
+------------------------------------------------------
+#We will drop the 'key' column
+df.drop('key', axis = 1, inplace = True)
+-----------------------------------------------------
+#Another we can do is drop duplicates
+#we have no duplicates in this df
+df.drop_duplicates(inplace=True)
+
+#And (just as we did for nulls), we can count them
+df.duplicated().sum()
+
+#We can also quickly see if we have duplicates using df.duplicated()
+df.duplicated().head()
+----------------------------------------------------
+#Standard Deviation only for specific column
+df['language'].std()
+#Variance only for specific column
+df['language'].var()
+---------------------------------------------------
+#we can filter a series easily
+dfnew['price'] > 70
+#If we want to return a df, we need to wrap it all in a df[]
+dfnew[dfnew['price'] > 70]
+-------------------------------------------------------
+#We can use multiple conditions --> Here we are using AND (&)
+
+dfnew[(dfnew['price'] > 30) & (dfnew['department'] == 'clothes')]
+-----------------------------------------------------------
+#But I can use pd.to_numeric and select errors = 'coerce' to force the '5f' to become a NaN value
+dfnew2['price'] = pd.to_numeric(dfnew2['price'],errors='coerce')
+-------------------------------------------------------------
+#sort on values
+dfnew2.sort_values('price', ascending = False, inplace=True)
+#Sort back based on index
+dfnew2.sort_index(ascending = True, inplace=True)
+------------------------------------------------------------
+#check out the columns
+dfnew2.columns
+
+#let's make them a list
+list(dfnew2.columns)
+#we can sort them as well. Remember that 
+x = sorted(dfnew2.columns)
+#Now lets assign these columns to the df
+dfnew2 = dfnew2.reindex(x, axis=1)
+-------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
