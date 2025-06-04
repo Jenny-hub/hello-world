@@ -55,11 +55,27 @@ followed by neutral ones (around 3k) and then followed by positive ones (around 
 WordCloud : Keyword analysis
 
 #  Bonus activity: can you filter and draw a Wordcloud of only the positive sentiment cases? Use also STOPWORDS from WordCloud
-df_pos = data[data['airline_sentiment'] == "positive"]
+df_positive = pd.DataFrame(
+    data[data['airline_sentiment']== 'positive'],
+    columns=['text']                      
+)
+df_positive.head()
 
-wordcloud = WordCloud(stopwords = STOPWORDS,max_words = 1000 , width = 1600 , height = 800,
-                     collocations=True).generate(" ".join(df_pos['final_text']))
-plt.imshow(wordcloud)
+from wordcloud import WordCloud
+
+import matplotlib.pyplot as plt
+
+words = df_positive.text.str.cat(sep=' ')
+
+wordcloud = WordCloud(width=800, height=400, background_color='white').generate(words)
+
+plt.figure(figsize=(10, 5))
+plt.imshow(wordcloud, interpolation='bilinear')
+plt.axis('off')  
+plt.title("Positive Airlines Reviews Word Cloud")
+plt.show()
+
+
 ------------------------------------------------------------------------------------------------------------------------------
 #  Bonus activity: can you filter and draw a Wordcloud of only the negative sentiment cases? Use also STOPWORDS from WordCloud
 
