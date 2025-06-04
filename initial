@@ -115,14 +115,17 @@ plt.show()
 Now, we will clean the tweet text data and apply classification algorithms on it
 # Define a function named 'lowercase' to lowercase your text in data
 
-def lowercase(text):
-    return text.lower() 
+def lowercase_text(text):
+    return str(text).lower() 
 -----------------------------------------------------------------------------------------------------------------------------
 # Apply your 'lowercase' function to lowercase your data on the 'text' feature of data.
 # Remember to reassign back to the same column for the changes to take effect.
 # Preview your results
-data['text'] = data['text'].apply(lowercase)
-data['text'].head()
+data = data.apply(lowercase_text)
+print("After lowercase transformation:")
+rand_idxs = np.random.randint(0, len(data), size=2)
+for idx in rand_idxs:
+    print(f"Preview: {data.iloc[idx]}")
 -----------------------------------------------------------------------------------------------------------------------------
 # Define a function named 'remove_stopwords' to remove stopwords from your text.
 # BONUS / Extra points: you may also wish to append to your stopwords the names of the airlines that you had previously stored in the variable 'airlines'
