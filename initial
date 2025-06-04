@@ -60,14 +60,21 @@ df_positive = pd.DataFrame(
     columns=['text']                      
 )
 df_positive.head()
-
+------------------
 from wordcloud import WordCloud
 
 import matplotlib.pyplot as plt
 
-words = df_positive.text.str.cat(sep=' ')
+text = ' '.join(df_positive['text'].astype(str).tolist())
 
-wordcloud = WordCloud(width=800, height=400, background_color='white').generate(words)
+text = re.sub(r'[^A-Za-z\s]', '', text)
+
+text = text.lower()
+
+stopwords = set(STOPWORDS)
+text = ' '.join(word for word in text.split() if word not in stopwords)
+
+wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
 
 plt.figure(figsize=(10, 5))
 plt.imshow(wordcloud, interpolation='bilinear')
@@ -79,11 +86,30 @@ plt.show()
 ------------------------------------------------------------------------------------------------------------------------------
 #  Bonus activity: can you filter and draw a Wordcloud of only the negative sentiment cases? Use also STOPWORDS from WordCloud
 
-df_neg = data[data['airline_sentiment'] == "negative"]
+df_negative = pd.DataFrame(
+    data[data['airline_sentiment']== 'negative'],
+    columns=['text']                      
+)
+df_negative.head()
+----------------------
+text = ' '.join(df_negative['text'].astype(str).tolist())
 
-wordcloud = WordCloud(stopwords = STOPWORDS,max_words = 1000 , width = 1600 , height = 800,
-                     collocations=True).generate(" ".join(df_neg['final_text']))
-plt.imshow(wordcloud)
+text = re.sub(r'[^A-Za-z\s]', '', text)
+
+text = text.lower()
+
+stopwords = set(STOPWORDS)
+text = ' '.join(word for word in text.split() if word not in stopwords)
+
+wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
+
+plt.figure(figsize=(10, 5))
+plt.imshow(wordcloud, interpolation='bilinear')
+plt.axis('off')  
+plt.title("Negative Airlines Reviews Word Cloud")
+plt.show()
+
+
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Text pre-processing of the tweet text data~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Now, we will clean the tweet text data and apply classification algorithms on it
