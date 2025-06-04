@@ -335,6 +335,10 @@ sns.heatmap(cm,
 # What do you observe in your results? Describe your findings
 we can see that the true mapped values to 0 and the the predicted mapped values to 0 have the highest correlation
 
+Class 0 is predicted well (high correlation between predicted and true values), while Class 1 precents some some confusion with class 0 and class 2.
+Class 2 has noticeable misclassification as class 0 and class 1.
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~Unsupervised Learning - Topic Modelling~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Create a corpora.Dictionary by passing the tokenized_reviews. Store in a new variable 'dictionary'
 dictionary = corpora.Dictionary(tokenized_reviews)
