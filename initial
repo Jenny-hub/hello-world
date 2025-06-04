@@ -252,7 +252,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 ---------------------------------------------------------------------------------------------------------------------------------
 # Briefly justify your choice for this particular vectorizer
 
-
+TF-IDF help us to find the more important words in a data set by assigning a weight in each term. At the same time it down-weights common words like “a”, “and”, and “the”.
 -------------------------------------------------------------------------------------------------------------------------------
 # Instantiate a vectorizer of your choice into a new variable named 'vect'
 vect = TfidfVectorizer()
