@@ -65,16 +65,16 @@ from wordcloud import WordCloud
 
 import matplotlib.pyplot as plt
 
-text = ' '.join(df_positive['text'].astype(str).tolist())
+text_pos = ' '.join(df_positive['text'].astype(str).tolist())
 
-text = re.sub(r'[^A-Za-z\s]', '', text)
+text_pos = re.sub(r'[^A-Za-z\s]', '', text_pos)
 
-text = text.lower()
+text_pos = text_pos.lower()
 
 stopwords = set(STOPWORDS)
-text = ' '.join(word for word in text.split() if word not in stopwords)
+text_pos = ' '.join(word for word in text_pos.split() if word not in stopwords)
 
-wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
+wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text_pos)
 
 plt.figure(figsize=(10, 5))
 plt.imshow(wordcloud, interpolation='bilinear')
@@ -92,24 +92,22 @@ df_negative = pd.DataFrame(
 )
 df_negative.head()
 ----------------------
-text = ' '.join(df_negative['text'].astype(str).tolist())
+text_neg = ' '.join(df_negative['text'].astype(str).tolist())
 
-text = re.sub(r'[^A-Za-z\s]', '', text)
+text_neg = re.sub(r'[^A-Za-z\s]', '', text_neg)
 
-text = text.lower()
+text_neg = text_neg.lower()
 
 stopwords = set(STOPWORDS)
-text = ' '.join(word for word in text.split() if word not in stopwords)
+text_neg = ' '.join(word for word in text_neg.split() if word not in stopwords)
 
-wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
+wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text_neg)
 
 plt.figure(figsize=(10, 5))
 plt.imshow(wordcloud, interpolation='bilinear')
 plt.axis('off')  
 plt.title("Negative Airlines Reviews Word Cloud")
 plt.show()
-
-
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Text pre-processing of the tweet text data~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Now, we will clean the tweet text data and apply classification algorithms on it
@@ -121,47 +119,84 @@ def lowercase_text(text):
 # Apply your 'lowercase' function to lowercase your data on the 'text' feature of data.
 # Remember to reassign back to the same column for the changes to take effect.
 # Preview your results
-data = data.apply(lowercase_text)
+data['text'] = data['text'].apply(lowercase_text)
+
 print("After lowercase transformation:")
-rand_idxs = np.random.randint(0, len(data), size=2)
+rand_idxs = np.random.randint(0, len(data), size=10)
 for idx in rand_idxs:
-    print(f"Preview: {data.iloc[idx]}")
+    print(f"Preview: {data['text'].iloc[idx]}")
 -----------------------------------------------------------------------------------------------------------------------------
 # Define a function named 'remove_stopwords' to remove stopwords from your text.
 # BONUS / Extra points: you may also wish to append to your stopwords the names of the airlines that you had previously stored in the variable 'airlines'
 # You may also consider pre-processing these values before appending them.
 # Optionally, you can also append any other frequently encountered words in your stopwords.
 
-def remove_stopwords(text):
-    textArr = text.split(' ')
-    rem_text = " ".join([i for i in textArr if i not in stop_words])
-    return rem_text
+import nltk
+from nltk.corpus import stopwords
+
+# Download stopwords if not already downloaded
+try:
+    nltk.data.find('corpora/stopwords')
+except LookupError:
+    nltk.download('stopwords')
+
+print("Sample stopwords:", list(stopwords.words('english'))[:10])
+------
+# Pre-processing and appending the airlines in stopwords.
+stpwrd = nltk.corpus.stopwords.words('english')
+airline_words = [word.lower() for word in airlines]
+stpwrd.extend(airline_words)
 -----------------------------------------------------------------------------------------------------------------------------
 # Apply your 'remove_stopwords' function to remove the stopwords from your 'text' feature of data.
 # Remember to reassign back to the same column for the changes to take effect.
 # Preview your results
 
+def remove_stopwords(text):
+    words = str(text).split()
+
+    filtered_words = [word for word in words if word.lower() not in stpwrd]
+
+    return ' '.join(filtered_words)
+
+# Apply stopword removal
 data['text'] = data['text'].apply(remove_stopwords)
-data['text'].head()
+
+print(data['text'].head())
 ---------------------------------------------------------------------------------------------------------------------------
 # Define one or more functions to perform ****at least one more additional**** pre-processing step of your choice based on the data that you observe!
 # The cleaner the data, the higher the mark for this activity :D
 
-def remove_usernames(text):
-    if isinstance(text, str):
-        text = re.sub(r'@[^\s]+', '', text)
-    return text
+#1. Usernames
+
+def replace_usernames(text):
+   
+    # Replace @username with [USER]
+    return re.sub(r'@\w+', '[USER]', str(text))
+
+
+data['text'] = data['text'].apply(replace_usernames)
+print(data['text'].head())
+-------
+#2. Removing non-alphabets 
+def remove_non_alphabets(text):
+
+    return re.sub(r'[^a-zA-Z\s]', '', str(text))
+
+data['text'] = data['text'].apply(remove_non_alphabets)
+
+print(data['text'].head())
 ---------------------------------------------------------------------------------------------------------------------------
 # Justify and briefly describe your choice of pre-processing step(s) here
-data['text'] = data['text'].apply(remove_usernames)
-data['text'].head()
-#i chose to remove the usernames in the comments because i didn't want to keep the mentioned names
+#I can see that there are both usernames and symbols (i.e. '@virginamerica @dhepburn said.'). Removing non-alphabetic characters 
+#like numbers and special symbols helps reducing noise from the dataset 
+#and focus on the actual words. The same is for usernames which are 
+#personally identifiable information and not relevant for sentiment analysis.
 ---------------------------------------------------------------------------------------------------------------------------
 # Create a list of the 'text' column from data. Store in a new variable named 'text_list'.
 # Preview the first entry of your text_list
 text_list = data['text'].values.tolist()
-text_list[0]
-type(text_list)
+text_list[0:6]
+#type(text_list)
 -------------------------------------------------------------------------------------------------------------------------
 # Define a function to perform lemmatization, named 'lemmatization'.
 # Bonus: allow postags only NOUN and ADJ
@@ -178,6 +213,8 @@ def lemmatization(text, allowed_postags=['NOUN', 'ADJ']):
 # Store in a new variable named 'tokenized_reviews'
 ### THIS STEP MAY TAKE A WHILE TO EXECUTE ###
 tokenized_reviews = lemmatization(text_list)
+
+print("\nTokenized reviews:")
 tokenized_reviews
 --------------------------------------------------------------------------------------------------------------------------------
 # Concatenate the tokens into single sentences once again, creating a new feature within data named 'final_text'
@@ -211,47 +248,81 @@ print('X_train shape: ', X_train.shape)
 print('X_test shape: ', X_test.shape)
 ---------------------------------------------------------------------------------------------------------------------------------
 # Import the library of the vectorization technique of your choice
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 ---------------------------------------------------------------------------------------------------------------------------------
 # Briefly justify your choice for this particular vectorizer
 
-i chose the “bags-of-words” representation which ignores structure and simply counts how often each word occurs. 
-CountVectorizer allows us to use the bags-of-words approach, by converting a collection of text documents into
-a matrix of token counts.
+
 -------------------------------------------------------------------------------------------------------------------------------
 # Instantiate a vectorizer of your choice into a new variable named 'vect'
-vect = CountVectorizer().fit(X_train)
+vect = TfidfVectorizer()
 vect
 -------------------------------------------------------------------------------------------------------------------------------
 # Can you also create/ instantiate your vectorizer using unigrams and bigrams?
 # Optional arguments to consider can be: min_df, max_df and max_features
 # Store in a variable 'vect_grams'
-vect_grams = CountVectorizer(min_df = 5, max_df = 20, ngram_range = (1,2)).fit(X_train)
+vect_grams = TfidfVectorizer(
+    max_features=5000,
+    min_df=5,
+    max_df=0.8,
+    stop_words='english'
+)
 ------------------------------------------------------------------------------------------------------------------------------
 # Apply any of the two afore-mentioned vectorizers to your train and test data to convert the text into numbers,
 # and store the results in X_train_vec and X_test_vec respectively
-X_train_vec = vect.transform(X_train)
-X_test_vec = vect.transform(X_test)
+X_train_vec = vect_grams.fit_transform(X_train)
+X_test_vec = vect_grams.transform(X_test)
+
+print(f"Training TF-IDF matrix shape: {X_train_vec.shape}")
+print(f"Testing TF-IDF matrix shape: {X_test_vec.shape}")
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Model Building~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Import the Supervised Learning algorithm (classification model) of your choice
-from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import cross_val_score
 -------------------------------------------------------------------------------------------------------------------------------
 # 1. Instantiate your ML model using any hyperparameters of your choice (no need for tuning)
 # 2. Fit your model to your train data
 # 3. Predict your test data. Store into a variable named 'pred'
 # 4. Report the accuracy score between your predicted and real test values
-SVCmodel = LinearSVC()
-SVCmodel.fit(X_train_vec, y_train)
-y_pred = SVCmodel.predict(X_test_vec)
+lr_model = LogisticRegression(
+    multi_class='multinomial',  
+    solver='lbfgs',             
+    max_iter=1000,              
+    random_state=42,           
+    n_jobs=-1
+)
+--------
+# Train the model
+print("Training Logistic Regression model...")
+
+lr_model.fit(X_train_vec, y_train)
+------
+# Make predictions
+y_pred = lr_model.predict(X_test_vec)
+
+# Evaluate the model
+print("\nLogistic Regression Model Evaluation:")
+print(f"Accuracy: {accuracy_score(y_test, y_pred):.4f}")
 -------------------------------------------------------------------------------------------------------------------------------
 # Print the classification report
+print("\nClassification Report:")
 print(classification_report(y_test, y_pred))
 -----------------------------------------------------------------------------------------------------------------------------
 # Build the confusion matrix between your predicted and real test values
 # Store into a new variable named 'cm'
+plt.figure(figsize=(10, 8))
 cm = confusion_matrix(y_test, y_pred)
-cm
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+            xticklabels=sorted(set(y_test)), 
+            yticklabels=sorted(set(y_test)))
+plt.xlabel('Predicted')
+plt.ylabel('True')
+plt.title('Confusion Matrix for Logistic Regression')
+plt.show()
 -------------------------------------------------------------------------------------------------------------------------------
 # Extra: plot in a heatmap the confusion matrix
 
