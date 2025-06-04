@@ -543,23 +543,50 @@ for m, cv in zip(x, coherence_values):
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Word2Vec~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Extra: Import the Word2Vec library
 
-import gensim
 from gensim.models import Word2Vec
 -----------------------------------------------------------------------------------------------------------------------------------------
 # Extra: Instantiate and create a  Word2Vec() model using the tokenized_reviews.
 # Optionally, set other parameters like the vector_size = 100,  window, min_count, and sg (for CBOW or skip-gram)
 # Store in a variable named 'w2v'
 
-w2v = Word2Vec(sentences=tokenized_reviews, vector_size=100, min_count=1, epochs=100) 
+tokenized_train = [text.split() for text in X_train]
+tokenized_test = [text.split() for text in X_test]
 
-print(w2v)
+print("Training Word2Vec model...")
+w2v = Word2Vec(
+    sentences=tokenized_train,
+    vector_size=384,
+    window=5,
+    min_count=2,
+    workers=4,
+    sg=1,
+    seed=42
+)
+# Train the model
+w2v.train(
+    tokenized_train,
+    total_examples=len(tokenized_train),
+    epochs=10
+)
 -----------------------------------------------------------------------------------------------------------------------------------------
 We can find the similar words with the given word and the examples are represented below.
 # Extra: using w2v, find the most similar words to the word 'crew'
-w2v.wv.most_similar('crew')
+try:
+    # Find words most similar
+    print("\nWords most similar to 'crew':")
+    for word, similarity in w2v.wv.most_similar('crew', topn=5):
+        print(f"{word}: {similarity:.4f}")
+except KeyError:
+    print("Word 'crew' not in vocabulary. Try another common word.")
 -----------------------------------------------------------------------------------------------------------------------------------------
 # Extra: using w2v, find the most similar words to the word 'delay'
-w2v.wv.most_similar('delay')
+try:
+    # Find words most similar
+    print("\nWords most similar to 'delay':")
+    for word, similarity in w2v.wv.most_similar('delay', topn=5):
+        print(f"{word}: {similarity:.4f}")
+except KeyError:
+    print("Word 'delay' not in vocabulary. Try another common word.")
 ----------------------------------------------------------------------------------------------------------------------------------------
 
 
