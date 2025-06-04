@@ -393,10 +393,9 @@ pyLDAvis.display(vis_data)
 ----------------------------------------------------------------------------------------------------------------------------------
 ### Explain your findings from LDA and the plot above
 
-We can see that the most frequent words in our dataset are: flight, customer, thank, hour, service, time
-for topic 1 the top 3 frequent words in our dataset are: customer, thank, service
-for topic 2 the top 3 frequent words in our dataset are: plane, flight, crew
-and so on
+We can see that the most frequent words in our dataset are: 
+Bubble size indicates how much that topic appears overall. 
+The topics that have distinct words, while those that are close or overlapping share similar words. 
 ---------------------------------------------------------------------------------------------------------------------------------
 # Calculate the coherence of your lda_model
 
