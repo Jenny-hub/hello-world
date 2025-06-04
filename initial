@@ -1,264 +1,433 @@
-1
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
+# 1. Load the dataset from https://raw.githubusercontent.com/satyajeetkrjha/kaggle-Twitter-US-Airline-Sentiment-/master/Tweets.csv
+# using as normal the pandas .read_csv() function. Store in a new variable named 'data'
+# 2. Print the dimensionality of data
+# 3. Preview the first few rows of data
+data = pd.read_csv('https://raw.githubusercontent.com/satyajeetkrjha/kaggle-Twitter-US-Airline-Sentiment-/master/Tweets.csv')
+print(data.shape)
+data
+----------------------------------------------------------------------------------------------------------------------------------
+# Get the overall information of the data DataFrame (data types, missing values, etc.)
+data.info()
+----------------------------------------------------------------------------------------------------------------------------------
+# Get all the unique airline names within 'data' and store them in a variable 'airlines'. Which feature would you use?
+# This list qill be used later on in the analysis
+# Print the 'airlines' results
+print('Unique Airline Names:')
+airlines = data['airline'].unique().tolist()
+airlines
+---------------------------------------------------------------------------------------------------------------------------------
+# 1. Set the column 'tweet_id' as the index of data (if you don't know how, you can drop it. Alternatively, the next step will sort this out).
+# Remember to conduct this step inplace or with assignment back to "data" for any changes to take effect
+# 2. Select and keep ONLY a subset of the features/columns: keep only 'text' and 'airline_sentiment' columns, and re-assign back to data (overwrite data)
+# 3. Preview once more the results of data as a sanity check. Have your changes gone through?
+data.set_index('tweet_id', inplace = True)
+data
+data = data[['text', 'airline_sentiment']]
+data
+---------------------------------------------------------------------------------------------------------------------------------
+# Drop the duplicates within data. Remember to assign back or conduct this step with replacement.
+# Sanity check: print the dimensionality of 'data' before and after the drop. Was your drop successful?
+data.shape
+data = data.drop_duplicates()
+data.shape
+----------------------------------------------------------------------------------------------------------------------------------
+# Check for null values in data; you can return True/False, counts or any other solution of your choice to investigate for missing values
+data.isnull().sum().sum() 
+---------------------------------------------------------------------------------------------------------------------------------
+# Can you print the 'text' (column) of one random sample in data?
+data['text'].sample(1)
 
-"""
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~EDA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Counts per type of Sentiment
 
-import pymysql
+# Get the number (frequency/count) of instances (samples) per each sentiment class (this will be a useful insight for the ML classifier later on).
+# Store in a variable with a name of your choice and print the results
+countpersentiment = data['airline_sentiment'].value_counts()
+countpersentiment
+---------------------------------------------------------------------------------------------------------------------------------
+# Use the variable above to plot a seaborn countplot
+sns.countplot(x="airline_sentiment", data=data);
+--------------------------------------------------------------------------------------------------------------------------------
+# - What do you observe?? Briefly describe here your findings
+We can easily observe that the majority of the comments that the airline receives are by far negative ones (around 9k), 
+followed by neutral ones (around 3k) and then followed by positive ones (around 2k)
+-------------------------------------------------------------------------------------------------------------------------------
+WordCloud : Keyword analysis
 
-# Open database connection
-#mysql_config --socket  to get the socket
+#  Bonus activity: can you filter and draw a Wordcloud of only the positive sentiment cases? Use also STOPWORDS from WordCloud
+df_pos = data[data['airline_sentiment'] == "positive"]
 
+wordcloud = WordCloud(stopwords = STOPWORDS,max_words = 1000 , width = 1600 , height = 800,
+                     collocations=True).generate(" ".join(df_pos['final_text']))
+plt.imshow(wordcloud)
+------------------------------------------------------------------------------------------------------------------------------
+#  Bonus activity: can you filter and draw a Wordcloud of only the negative sentiment cases? Use also STOPWORDS from WordCloud
 
-#Create a database for supplierProduct,delete it if it exists
-# it deletes it
-# Also create tables, which are empty initially. The tables will be 
-# populated with data form the command prompt
+df_neg = data[data['airline_sentiment'] == "negative"]
 
+wordcloud = WordCloud(stopwords = STOPWORDS,max_words = 1000 , width = 1600 , height = 800,
+                     collocations=True).generate(" ".join(df_neg['final_text']))
+plt.imshow(wordcloud)
 
-db = pymysql.connect(host="localhost",
-                     user="0000",
-                     passwd="545747464764.",
-                     port=000)
-                   
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Text pre-processing of the tweet text data~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Now, we will clean the tweet text data and apply classification algorithms on it
+# Define a function named 'lowercase' to lowercase your text in data
 
-cursor=db.cursor()
+def lowercase(text):
+    return text.lower() 
+-----------------------------------------------------------------------------------------------------------------------------
+# Apply your 'lowercase' function to lowercase your data on the 'text' feature of data.
+# Remember to reassign back to the same column for the changes to take effect.
+# Preview your results
+data['text'] = data['text'].apply(lowercase)
+data['text'].head()
+-----------------------------------------------------------------------------------------------------------------------------
+# Define a function named 'remove_stopwords' to remove stopwords from your text.
+# BONUS / Extra points: you may also wish to append to your stopwords the names of the airlines that you had previously stored in the variable 'airlines'
+# You may also consider pre-processing these values before appending them.
+# Optionally, you can also append any other frequently encountered words in your stopwords.
 
-cursor.execute("DROP DATABASE IF EXISTS supplierProduct");
+def remove_stopwords(text):
+    textArr = text.split(' ')
+    rem_text = " ".join([i for i in textArr if i not in stop_words])
+    return rem_text
+-----------------------------------------------------------------------------------------------------------------------------
+# Apply your 'remove_stopwords' function to remove the stopwords from your 'text' feature of data.
+# Remember to reassign back to the same column for the changes to take effect.
+# Preview your results
 
+data['text'] = data['text'].apply(remove_stopwords)
+data['text'].head()
+---------------------------------------------------------------------------------------------------------------------------
+# Define one or more functions to perform ****at least one more additional**** pre-processing step of your choice based on the data that you observe!
+# The cleaner the data, the higher the mark for this activity :D
 
-#create a database 
-cursor.execute("create database supplierProduct")
+def remove_usernames(text):
+    if isinstance(text, str):
+        text = re.sub(r'@[^\s]+', '', text)
+    return text
+---------------------------------------------------------------------------------------------------------------------------
+# Justify and briefly describe your choice of pre-processing step(s) here
+data['text'] = data['text'].apply(remove_usernames)
+data['text'].head()
+#i chose to remove the usernames in the comments because i didn't want to keep the mentioned names
+---------------------------------------------------------------------------------------------------------------------------
+# Create a list of the 'text' column from data. Store in a new variable named 'text_list'.
+# Preview the first entry of your text_list
+text_list = data['text'].values.tolist()
+text_list[0]
+type(text_list)
+-------------------------------------------------------------------------------------------------------------------------
+# Define a function to perform lemmatization, named 'lemmatization'.
+# Bonus: allow postags only NOUN and ADJ
 
-#make it current
-cursor.execute("use supplierProduct")
+nlp = spacy.load('en_core_web_sm')
+def lemmatization(text, allowed_postags=['NOUN', 'ADJ']): 
+       output = []
+       for sent in text:
+            doc = nlp(sent) 
+            output.append([token.lemma_ for token in doc if token.pos_ in allowed_postags ])
+       return output
+--------------------------------------------------------------------------------------------------------------------------------
+# Run your lemmatization function on text_list (remember, this is a list, not a DataFrame so you cannot use apply())
+# Store in a new variable named 'tokenized_reviews'
+### THIS STEP MAY TAKE A WHILE TO EXECUTE ###
+tokenized_reviews = lemmatization(text_list)
+tokenized_reviews
+--------------------------------------------------------------------------------------------------------------------------------
+# Concatenate the tokens into single sentences once again, creating a new feature within data named 'final_text'
+data['final_text']= ''
+for i in range(len(text_list)):
+    data['final_text'].iloc[i] = "".join(text_list[i])
+data.head()
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Vectorization~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Store the final_text column from data as your variable X
+# Store the airline_sentiment column from data as your class vector y
+X = data['final_text']
+y = data['airline_sentiment']
+X
+y
+--------------------------------------------------------------------------------------------------------------------------------
+# In this step we want to map the classes 'positive', 'neutral' and 'negative' to numerical values
+# Instantiate a LabelEncoder() object and store in a variable named 'le'
+# Fit and transform your LabelEncoder to your y class variable
+le = LabelEncoder()
+y = le.fit_transform(y)
+y
+----------------------------------------------------------------------------------------------------------------------------------
+The data is split in the standard ratio
 
+# Use the holdout method from sklearn to split your data into train and test. Set the random_state to 42 and use stratification.
+# Print the dimensionality of the end results as a sanity check
 
-# Create supplier table
-sql1 = """CREATE TABLE supplier  (
-         id  CHAR(20) NOT NULL primary key,
-         name  CHAR(20),
-         status INT,  
-         city CHAR(20))"""
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = 42, stratify = y)
+print('X_train shape: ', X_train.shape)
+print('X_test shape: ', X_test.shape)
+---------------------------------------------------------------------------------------------------------------------------------
+# Import the library of the vectorization technique of your choice
+from sklearn.feature_extraction.text import CountVectorizer
+---------------------------------------------------------------------------------------------------------------------------------
+# Briefly justify your choice for this particular vectorizer
 
-# Create product table
-sql2 = """CREATE TABLE product (
-         id  CHAR(20) NOT NULL primary key,
-         name  CHAR(20),
-         color CHAR(20),
-         weight  float,  
-         city CHAR(20))"""
+i chose the “bags-of-words” representation which ignores structure and simply counts how often each word occurs. 
+CountVectorizer allows us to use the bags-of-words approach, by converting a collection of text documents into
+a matrix of token counts.
+-------------------------------------------------------------------------------------------------------------------------------
+# Instantiate a vectorizer of your choice into a new variable named 'vect'
+vect = CountVectorizer().fit(X_train)
+vect
+-------------------------------------------------------------------------------------------------------------------------------
+# Can you also create/ instantiate your vectorizer using unigrams and bigrams?
+# Optional arguments to consider can be: min_df, max_df and max_features
+# Store in a variable 'vect_grams'
+vect_grams = CountVectorizer(min_df = 5, max_df = 20, ngram_range = (1,2)).fit(X_train)
+------------------------------------------------------------------------------------------------------------------------------
+# Apply any of the two afore-mentioned vectorizers to your train and test data to convert the text into numbers,
+# and store the results in X_train_vec and X_test_vec respectively
+X_train_vec = vect.transform(X_train)
+X_test_vec = vect.transform(X_test)
 
-#create supplierProduct table
-sql3 = """CREATE TABLE supplierProduct2 (
-         sid   CHAR(20), 
-         foreign key (sid) references supplier(id),
-         pid char(20), 
-         qty INT,
-         foreign key (pid) references product(id),
-         primary key(sid,pid))"""
-         
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Model Building~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Import the Supervised Learning algorithm (classification model) of your choice
+from sklearn.svm import LinearSVC
+-------------------------------------------------------------------------------------------------------------------------------
+# 1. Instantiate your ML model using any hyperparameters of your choice (no need for tuning)
+# 2. Fit your model to your train data
+# 3. Predict your test data. Store into a variable named 'pred'
+# 4. Report the accuracy score between your predicted and real test values
+SVCmodel = LinearSVC()
+SVCmodel.fit(X_train_vec, y_train)
+y_pred = SVCmodel.predict(X_test_vec)
+-------------------------------------------------------------------------------------------------------------------------------
+# Print the classification report
+print(classification_report(y_test, y_pred))
+-----------------------------------------------------------------------------------------------------------------------------
+# Build the confusion matrix between your predicted and real test values
+# Store into a new variable named 'cm'
+cm = confusion_matrix(y_test, y_pred)
+cm
+-------------------------------------------------------------------------------------------------------------------------------
+# Extra: plot in a heatmap the confusion matrix
 
-#this is where the queries are executed
-cursor.execute(sql1)
-cursor.execute(sql2)
-cursor.execute(sql3)
+f, ax = plt.subplots(figsize=(12, 8))
+sns.heatmap(cm, 
+            annot=True, 
+            annot_kws={'size': 8}, 
+            cmap="Spectral_r");
+-----------------------------------------------------------------------------------------------------------------------------
+# What do you observe in your results? Describe your findings
+we can see that the true mapped values to 0 and the the predicted mapped values to 0 have the highest correlation
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~Unsupervised Learning - Topic Modelling~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Create a corpora.Dictionary by passing the tokenized_reviews. Store in a new variable 'dictionary'
+dictionary = corpora.Dictionary(tokenized_reviews)
+texts = tokenized_reviews
+-------------------------------------------------------------------------------------------------------------------------------
+# Create the doc_term_matrix from your tokenized_reviews
+doc_term_matrix = [dictionary.doc2bow(rev) for rev in tokenized_reviews]
+-------------------------------------------------------------------------------------------------------------------------------
+# Instantiate the LDA model and store it in a variable 'LDA''
+# Build your LDA model using any parameters of your choice vy advising the documentation
 
+# *********** Write comments next to every argument you have selected to use, justifying their entries/values
 
-# disconnect from server
-db.close()
---------------------------------------------------------------
-2
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
+LDA = gensim.models.ldamodel.LdaModel
 
-"""
-import pymysql
-import pandas as pd
+# Build LDA model
+lda_model = LDA(corpus=doc_term_matrix,
+                id2word=dictionary,
+                num_topics=10, #set to 10
+                random_state=100, #alpha and beta are hyperparameters that affect sparsity of the topics
+                chunksize=100,
+                passes=10, #controls how often we train the model on the entire corpus
+                iterations=10) #controls how often we repeat a particular loop over each document
+--------------------------------------------------------------------------------------------------------------------------------
+# Print the Keywords for each of the number of topics generated by the lda_model
+lda_model.print_topics()
+----------------------------------------------------------------------------------------------------------------------------------
+# Create a visualization plot of your LDA
+vis = gensimvis.prepare(lda_model, doc_term_matrix, dictionary)
+vis
+----------------------------------------------------------------------------------------------------------------------------------
+### Explain your findings from LDA and the plot above
 
-# Populate the database with data
+We can see that the most frequent words in our dataset are: flight, customer, thank, hour, service, time
+for topic 1 the top 3 frequent words in our dataset are: customer, thank, service
+for topic 2 the top 3 frequent words in our dataset are: plane, flight, crew
+and so on
+---------------------------------------------------------------------------------------------------------------------------------
+# Calculate the coherence of your lda_model
+from gensim.models import CoherenceModel
 
+# Compute Coherence Score
+coherence_model_lda = CoherenceModel(model=lda_model, texts=tokenized_reviews, dictionary=dictionary, coherence='c_v')
+coherence_lda = coherence_model_lda.get_coherence()
+print('Coherence Score: ', coherence_lda)
+----------------------------------------------------------------------------------------------------------------------------------
+# Extra: calculate the perplexity of your lda_model
+print('\nPerplexity: ', lda_model.log_perplexity(doc_term_matrix)) 
+-----------------------------------------------------------------------------------------------------------------------------
 
+~~~~~~~~~~~~~~~~~~~~~Extra: Checking which topic is giving us the highest coherence score~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Extra: Build your own compute_coherence_values() function to loop through various LDA model hyperparameters to find the optimal LDA model
+# supporting function
+def compute_coherence_values(corpus, dictionary, k, a, b):
+    
+    lda_model = gensim.models.LdaMulticore(corpus=doc_term_matrix,
+                                           id2word=dictionary,
+                                           num_topics=k, 
+                                           random_state=100,
+                                           chunksize=100,
+                                           passes=10,
+                                           alpha=a,
+                                           eta=b)
+    
+    coherence_model_lda = CoherenceModel(model=lda_model, texts= tokenized_reviews, dictionary=dictionary, coherence='c_v')
+    
+    return coherence_model_lda.get_coherence()
+-------------------------------------------------------------------------------------------------------------------------------------------------
+# Extra: Execute the function defined above; this may take a while to run   
 
+#stopped running it due to time limitations
 
-# Open database connection
-db = pymysql.connect(host="localhost",
-                     user="root",
-                     passwd="6980123379.Ba.",
-                     port=3307)
-cursor=db.cursor()
+import numpy as np
+import tqdm
 
+grid = {}
+grid['Validation_Set'] = {}
 
+# Topics range
+min_topics = 2
+max_topics = 11
+step_size = 1
+topics_range = range(min_topics, max_topics, step_size)
 
-cursor.execute("use supplierProduct")
+# Alpha parameter
+alpha = list(np.arange(0.01, 1, 0.3))
+alpha.append('symmetric')
+alpha.append('asymmetric')
 
+# Beta parameter
+beta = list(np.arange(0.01, 1, 0.3))
+beta.append('symmetric')
 
+# Validation sets
+num_of_docs = len(doc_term_matrix)
+corpus_sets = [gensim.utils.ClippedCorpus(doc_term_matrix, int(num_of_docs*0.75)), 
+               doc_term_matrix]
 
-#Read Supplier, Product, and SupplierProduct data from CSV
-# Do not read the first line
-# I provide column names
-data = pd.read_csv ('../data-Supplier-Product/supplier2.data', names=['id','name','status','city'],sep=' ', skiprows=1)
+corpus_title = ['75% Corpus', '100% Corpus']
+
+model_results = {'Validation_Set': [],
+                 'Topics': [],
+                 'Alpha': [],
+                 'Beta': [],
+                 'Coherence': []
+                }
+
+# Can take a long time to run
+if 1 == 1:
+    pbar = tqdm.tqdm(total=(len(beta)*len(alpha)*len(topics_range)*len(corpus_title)))
+    
+    # iterate through validation corpuses
+    for i in range(len(corpus_sets)):
+        # iterate through number of topics
+        for k in topics_range:
+            # iterate through alpha values
+            for a in alpha:
+                # iterare through beta values
+                for b in beta:
+                    # get the coherence score for the given parameters
+                    cv = compute_coherence_values(corpus=corpus_sets[i], dictionary=dictionary, 
+                                                  k=k, a=a, b=b)
+                    # Save the model results
+                    model_results['Validation_Set'].append(corpus_title[i])
+                    model_results['Topics'].append(k)
+                    model_results['Alpha'].append(a)
+                    model_results['Beta'].append(b)
+                    model_results['Coherence'].append(cv)
                     
-data2 = pd.read_csv ('../data-Supplier-Product/product2.data', names=['id','name','color','weight','city'],sep=' ', skiprows=1)
-data3 = pd.read_csv ('../data-Supplier-Product/supplierProduct2.data', names=['sid','pid','qty'],sep='  ', skiprows=1)
+                    pbar.update(1)
+    pd.DataFrame(model_results).to_csv('./results/lda_tuning_results.csv', index=False)
+    pbar.close()
+-------------------------------------------------------------------------------------------------------------------------------------
+#stopped running it due to time limitations
+def compute_coherence_values(dictionary, corpus, texts, limit, start=2, step=3):
+    coherence_values = []
+    model_list = []
+    for num_topics in range(start, limit, step):
+        model = gensim.models.ldamodel.LdaModel(corpus=corpus, num_topics=num_topics, id2word=dictionary)
+        model_list.append(model)
+        coherencemodel = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
+        coherence_values.append(coherencemodel.get_coherence())
+
+    return model_list, coherence_values
+-------------------------------------------------------------------------------------------------------------------------------------
+#stopped running it due to time limitations
+model_list, coherence_values = compute_coherence_values(dictionary=dictionary,
+                                                        corpus=doc_term_matrix,
+                                                        texts=tokenized_reviews,
+                                                        start=2,
+                                                        limit=50,
+                                                        step=1)
+-------------------------------------------------------------------------------------------------------------------------------------
+# Extra: plot the coherence values
+
+#stopped running it due to time limitations
+
+limit=50; start=2; step=1;
+x = range(start, limit, step)
+
+plt.plot(x, coherence_values)
+plt.xlabel("Num Topics")
+plt.ylabel("Coherence score")
+plt.legend(("coherence_values"), loc='best')
+plt.show() # Print the coherence scores
+----------------------------------------------------------------------------------------------------------------------------------------
+# Extra: Loop through the number of topics and coherence values
+
+#stopped running it due to time limitations
+
+for m, cv in zip(x, coherence_values):
+    print("Num Topics =", m, " has Coherence Value of", round(cv, 4))
+-----------------------------------------------------------------------------------------------------------------------------------------
+# Extra: Find the optimal number of topics - Justify why
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+# Extra: Build the optimal model and plot again the results.
+
+
+----------------------------------------------------------------------------------------------------------------------------------------
+# Extra: What do you observe? Discuss briefly any final findings.
+
+----------------------------------------------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Word2Vec~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Extra: Import the Word2Vec library
+
+import gensim
+from gensim.models import Word2Vec
+-----------------------------------------------------------------------------------------------------------------------------------------
+# Extra: Instantiate and create a  Word2Vec() model using the tokenized_reviews.
+# Optionally, set other parameters like the vector_size = 100,  window, min_count, and sg (for CBOW or skip-gram)
+# Store in a variable named 'w2v'
+
+w2v = Word2Vec(sentences=tokenized_reviews, vector_size=100, min_count=1, epochs=100) 
+
+print(w2v)
+-----------------------------------------------------------------------------------------------------------------------------------------
+We can find the similar words with the given word and the examples are represented below.
+# Extra: using w2v, find the most similar words to the word 'crew'
+w2v.wv.most_similar('crew')
+-----------------------------------------------------------------------------------------------------------------------------------------
+# Extra: using w2v, find the most similar words to the word 'delay'
+w2v.wv.most_similar('delay')
+----------------------------------------------------------------------------------------------------------------------------------------
 
 
 
 
-#Insert supplier data to DB
-#cols will contain a string with all column names: 
-#cols='id,name,status,city'
-cols = ",".join([str(i) for i in data.columns.tolist()])
-
-# Insert DataFrame records one by one to the database
-# INSERT is a SQL command
-# That's te first command
-#"INSERT INTO supplier (id,name,status,city) VALUES ('S1', 'Smith', 20, 'London')"
-for i,row in data.iterrows():
-    sql = "INSERT INTO supplier (" +cols + ") VALUES " + str(tuple (row))  
-    print (sql)
-    cursor.execute(sql)
-    db.commit()
 
 
-#Insert product data to DB
-cols = ",".join([str(i) for i in data2.columns.tolist()])
-# Insert DataFrame recrds one by one.
-for i,row in data2.iterrows():
-    sql = "INSERT INTO product (" +cols + ") VALUES " + str(tuple (row))    
-    cursor.execute(sql)
-    db.commit()
-
-
-
-#Insert supplierproduct data to DB
-cols = ",".join([str(i) for i in data3.columns.tolist()])
-# Insert DataFrame recrds one by one.
-for i,row in data3.iterrows():
-    sql = "INSERT INTO supplierproduct2 (" +cols + ") VALUES " + str(tuple (row))    
-    cursor.execute(sql)
-    db.commit()
-
-
-
-
-# disconnect from server
-db.close()
-----------------------------------------------------------------------------------------
-3
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-
-
-
-# works with windows
-import pymysql
-
-
-
-#Access a database
-
-# Open database connection
-db = pymysql.connect(host="localhost",           #address of the server
-                     user="root",                #user name
-                     passwd="6980123379.Ba.",
-                     port=3307)      #password   
-
-cursor=db.cursor()
-
-
-
-cursor.execute("use supplierProduct")
-
-
-# select columns
-# this a query, but it's only text
-sql1="select id, name from product";
-
-
-sql1="select name, city from sy";
-
-
-#select rows 
-sql2="""select * from product
-      where name='Screw'"""
-      
-#groupby: how many products per city?
-sql3="""select count(id), city from product
-      group by city"""
-  
-#select all suppliers whose name starts with an S
-#%S   starts with S
-#%S   ends with S
-#%S%  have s in any position
-sql4="""select * from supplier
-      where name like '%S'"""
-
-#groupby: how many people per city?
-sql5="""select count(id), city from supplier
-      group by city"""    
-    
-    
-
-    
-sql6="""select supplier.name, product.name from
-        supplier, product, supplierProduct2
-        where supplier.id = supplierProduct2.sid and
-              product.id = supplierProduct2.pid"""
-
-
-
-
-#1.	Display the names of all suppliers, as well as their city
-q1="select name, city from supplier";
-
-#2.	Display all the name of suppliers that start with ‘S’
-q2="select * from supplier where name like 'S%'";
-
-#3.	Count the number of products and the number of unique products based on pname
-q3a="select count(name) from product;"
-q3b="select count(distinct(name)) from product;"
-
-
-#4.	Count the number of Red products
-q4="select count(*) from product where color='red'";
-
-
-#5.	Which is the lightest product?
-# Note it's a nested query:
-# a. start from the end: select min(weight) from product finds the min weight
-# b. then it selects the product with the min weight: select name, weight from product where weight
-q5="select name, weight from product where weight = (select min(weight) from product)";
-
-
-#6.	Sort products by product names, and then by product color
-q6="SELECT * FROM product order by name, color;"
-
-
-#7.	Sort product names by descending order
-q7="SELECT * FROM product order  by name desc"
-
-#8.	Display the number of products for each color;
-q8="select color, count(name) from product group by color"
-
-#9.	What is the name of the supplier that supplied 200 units of product P1?
-q9="""select supplier.name from supplier, supplierProduct2 where 
-            supplierProduct2.qty=200 and 
-            supplierProduct2.pid='P1' and
-            supplierProduct2.sid=supplier.id"""
-
-
-
-# change the argument to run different queries
-cursor.execute(q9)
-result=cursor.fetchall()
-print (result)
-
-
-db.close()
 
