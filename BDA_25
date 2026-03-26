@@ -1,0 +1,28 @@
+1. Consider HDFS which makes use of chunk replication.
+a. Give two pros and two cons for making use of chunk replication.
+b. What is the difference between replication and partition?
+c. Assume a file f has size 1000000 bytes, and each partition of HDFS has size 216 = 65536 bytes. 
+   Moreover, assume that HDFS uses a replication factor of 3. How many chunks of f exist in the filesystem?
+-----------------------------
+a. Benefits: 1.Fault Tolerance: Dta can be read from duplicated chinks even if a node crashes
+             2.Increased Availability: Multiple replicas can service read requests, leading to improved performance.
+   Drawbacks:1.Increased storage requirements: More disk space is consumed due to multiple copies.
+             2.Replication Overhead: More networks are employed during duplication and recovery.
+
+b. Difference between replication and partition
+Replication: Duplicates the same data in several nodes for reliability and fault tolerance
+Partitioning: splits data into separate blocks(partitions), each with a separate node for parallel and scalable processing.
+c. File size= 1,000,000 bytes | Chunk size=2^16=65536 bytes | Replication factor=3 | Number of chinks =ceil (1,000,000/65536) =16 chunks
+   | Total chunks in filesystem = 16*3= 48 replicated chunks
+********************************************************************************************************************************************
+2. Assume two threads run in parallel without synchronization between themselves. The first loops 10 times, and each time it prints a on the output. 
+   The second loops 10 times, and each time it prints b on the output.
+a.What is the maximum number of consecutive a’s and consecutive b’s that may appear in an execution of the program?
+b.What is the minimum number of consecutive a’s and consecutive b’s that may appear in an execution of the program?
+c.What synchronization mechanism we need to employ so that all a’s appear before all b’s? Show how the synchronization mechanism can be used to implement this behavior.
+----------------------------
+a.Maximum number of consecutive a’s and b’s: Since each thread prints 10 times, in the absence of synchronization, all a’s or all b’s can print one after the other. 
+  So, the answer is 10 consecutive a’s and 10 consecutive b’s
+b.Minimum number of consecutive a’s and b’s: 1 consecutive a and 1 consecutive b.
+c.Synchronization mechanism: Allow all prints before allowing b prints to begin.
+*********************************************************************************************************************************************
