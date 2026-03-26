@@ -26,3 +26,24 @@ a.Maximum number of consecutive a’s and b’s: Since each thread prints 10 tim
 b.Minimum number of consecutive a’s and b’s: 1 consecutive a and 1 consecutive b.
 c.Synchronization mechanism: Allow all prints before allowing b prints to begin.
 *********************************************************************************************************************************************
+3. Explain what an atomic transaction is and give an example in which lack of atomicity results to an inconsistent state. Give details for your answer.
+----------------------------
+An atomic transaction is a one-time operation. It either entirely succeeds or has no effect.
+Example of inconsistency: In a banking system, money transfer involves subtracting from account A and adding to account B. 
+If the system crashes after subtracting fron account A but prior to account B, that means that the transaction is not finished, this results in data inconsistency.
+**********************************************************************************************************************************************
+4. Consider an application which when it runs sequentially takes 20 minutes to complete while 80% of its execution can be parallelized. 
+   How long will it take when it runs on 16 processors?
+----------------------------
+Parallelization Speedup Sequential time=20 minutes | 80% can be parallelized, 20% must be sequential
+Use Amdahl’s Law: Speedup= 1/(S+(1-S)/P). Where: S =0.2 and P = 16 | Speedup = 1/ (0.2+0.8/16)= 1/(0.2+0.05)= 1/0.25=4 |New time = 20/4= 5 minutes
+***********************************************************************************************************************************************
+5. Give two reasons as to why a NoSQL database system would be preferred to an SQL one.
+----------------------------
+Two reasons to prefer NoSQL:
+1.Scalability: No SQL databases scale horizontally and are well suited to large, distributed systems.
+2.Flexible Schema: No SQL supports dynamic, unstructured data. Ideal for agile development and evolving requirements.
+
+
+
+
