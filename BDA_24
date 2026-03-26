@@ -1,0 +1,44 @@
+1. Assume two sensors that monitor the health of a press machine in a factory assembly line send their data to a Kafka topic PressData
+for predictive maintenance analysis. The order of data of each sensor and across the two sensors is important to draw valid conclusions. 
+Two applications A1 and A2 perform independent analytics processing of the sensor data. 
+How many partitions should topic PressData have and how many consumer groups should be created for this scenario?
+----------------------------
+The Kafka topic should have one partition because message ordering must be preserved both within each sensor and across the two sensors. 
+Kafka guarantees ordering only within a single partition, so using more partitions would break the global order. 
+Additionally, there should be two consumer groups, one for each application (A1 and A2), so that both applications can independently 
+consume all the data from the topic.
+********************************************************************************************************************************************
+2. Consider a distributed banking application that is required to be available 24/7/365. What property must be sacrificed under this assumption and why?
+----------------------------
+In a distributed banking system that must be available at all times (24/7/365), consistency must be sacrificed. 
+According to the CAP theorem, in the presence of network partitions, a system can guarantee either consistency or availability, but not both. 
+Since availability is required, the system may return slightly outdated or inconsistent data during failures.
+********************************************************************************************************************************************
+3. Explain what is Eventual Consistency. Give an example of an application for which eventual consistency is acceptable.
+----------------------------
+Eventual consistency is a model where updates to a system are not immediately visible to all nodes, but all replicas will eventually become consistent 
+if no new updates occur. This means temporary inconsistencies are allowed. 
+A typical example is Instagram, where a newly uploaded post may not appear instantly to all users but will become visible to everyone after a short time.
+********************************************************************************************************************************************
+4. What is the best speedup that can be achieved for a program for which 25% of its execution is parallelizable when it runs on a machine with 3 processors? 
+Can this speedup be achieved in practice? Explain your answer.
+----------------------------
+The maximum theoretical speedup is approximately 1.2×, calculated using Amdahl’s Law with 25% parallelizable code and 3 processors. However, this speedup 
+is rarely achieved in practice due to overheads such as communication, synchronization, and uneven workload distribution, which reduce the actual performance gains.
+********************************************************************************************************************************************
+5. Synchronization: Consider the dining philosophers problem that was presented in class. Each philosopher spends her life as
+Forever
+ Wakeup
+  Grab left chopstick
+  Grab right chopstick
+  Eat
+  Put down right chopstick
+  Put down left chopstick
+  Sleep
+Give an execution scenario that may result to an undesirable state assuming three philosophers. Explain what is the reason of reaching this state and 
+give a solution to overcome the problem.
+-----------------------------
+An undesirable scenario occurs when all philosophers pick up their left chopstick simultaneously and then wait for the right one, which is already held 
+by their neighbor. This results in a deadlock, where no philosopher can proceed. The problem arises due to circular waiting and lack of coordination. 
+A common solution is to break symmetry, for example by having one philosopher pick up the right chopstick first, or by limiting the number of philosophers 
+who can attempt to eat at the same time using a semaphore.
