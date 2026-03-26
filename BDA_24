@@ -3,28 +3,31 @@ for predictive maintenance analysis. The order of data of each sensor and across
 Two applications A1 and A2 perform independent analytics processing of the sensor data. 
 How many partitions should topic PressData have and how many consumer groups should be created for this scenario?
 ----------------------------
-The Kafka topic should have one partition because message ordering must be preserved both within each sensor and across the two sensors. 
-Kafka guarantees ordering only within a single partition, so using more partitions would break the global order. 
-Additionally, there should be two consumer groups, one for each application (A1 and A2), so that both applications can independently 
-consume all the data from the topic.
+The Kafka topic should have one partition to maintain message order within each sensor and between the two sensors. Kafka ensures order only in a single 
+partition, so adding more partitions would disrupt the global order. 
+There should also be two consumer groups, one for each application, A1 and A2, allowing both applications to independently consume all the data from the topic.
 ********************************************************************************************************************************************
 2. Consider a distributed banking application that is required to be available 24/7/365. What property must be sacrificed under this assumption and why?
 ----------------------------
-In a distributed banking system that must be available at all times (24/7/365), consistency must be sacrificed. 
-According to the CAP theorem, in the presence of network partitions, a system can guarantee either consistency or availability, but not both. 
-Since availability is required, the system may return slightly outdated or inconsistent data during failures.
+In a banking system that has to be working all the time the system can not always have the up to date information. The CAP theorem says that if 
+the network is not working right the system can either have the most up to date information or be available but it can not do both.
+So, since the banking system has to be available, it might give us information that's a little old or inconsistent when something goes wrong with 
+the banking system.
 ********************************************************************************************************************************************
 3. Explain what is Eventual Consistency. Give an example of an application for which eventual consistency is acceptable.
 ----------------------------
-Eventual consistency is a model where updates to a system are not immediately visible to all nodes, but all replicas will eventually become consistent 
-if no new updates occur. This means temporary inconsistencies are allowed. 
-A typical example is Instagram, where a newly uploaded post may not appear instantly to all users but will become visible to everyone after a short time.
+Eventual consistency is a model where changes are not seen by all nodes right away. Over time all replications will be the same on all systems as long as 
+no new changes are made. This means that temporary inconsistencies are allowed for a while.
+For example Instagram is, like this. When we upload a post it might not show up for all our friends right away, but after a few minutes everyone will be 
+able to see it.
 ********************************************************************************************************************************************
 4. What is the best speedup that can be achieved for a program for which 25% of its execution is parallelizable when it runs on a machine with 3 processors? 
 Can this speedup be achieved in practice? Explain your answer.
 ----------------------------
-The maximum theoretical speedup is approximately 1.2×, calculated using Amdahl’s Law with 25% parallelizable code and 3 processors. However, this speedup 
-is rarely achieved in practice due to overheads such as communication, synchronization, and uneven workload distribution, which reduce the actual performance gains.
+According to Amdahl’s LawNow what we can hope for is about 1.2 times increase in speedup. This is if we have 25 percent of our code to be run at the same 
+time and we have 3 processors working together. However, in real life we do not usually achieve this much faster speed. This is because there are a lot of 
+factors that slow us down like communicating between systems making sure everything is working together and dealing with uneven workloads. All these factors 
+reduce the performance gains.
 ********************************************************************************************************************************************
 5. Synchronization: Consider the dining philosophers problem that was presented in class. Each philosopher spends her life as
 Forever
@@ -38,7 +41,8 @@ Forever
 Give an execution scenario that may result to an undesirable state assuming three philosophers. Explain what is the reason of reaching this state and 
 give a solution to overcome the problem.
 -----------------------------
-An undesirable scenario occurs when all philosophers pick up their left chopstick simultaneously and then wait for the right one, which is already held 
-by their neighbor. This results in a deadlock, where no philosopher can proceed. The problem arises due to circular waiting and lack of coordination. 
-A common solution is to break symmetry, for example by having one philosopher pick up the right chopstick first, or by limiting the number of philosophers 
-who can attempt to eat at the same time using a semaphore.
+The problem begins when all the philosophers pick up their left chopstick at the same time and then wait for the right one. The problem is that the 
+right chopstick is already being held by the person sitting next to them. This means that none of the philosophers can do anything and they get stuck because 
+they are all waiting for each other.
+A simple way to fix this is to make things a little different like having one philosopher pick up the right chopstick first. Another way is to limit the number of 
+philosophers that eat at the same time by using a semaphore.
