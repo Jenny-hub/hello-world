@@ -1,0 +1,60 @@
+from mrjob.job import MRJob
+import heapq
+
+header = 'Date,Close,High,Low,Open,Volume'
+headerl = header.split(',')
+
+
+
+class BTC(MRJob): # MapReduce job class
+
+    def mapper(self, _, line):
+        if line == header:
+            return
+        rowd = dict(zip(headerl, line.split(',')))
+
+        date = headerl[0]
+        year = date[6:]
+        month = date[:2]
+        year_month = year + '-' + month
+
+        high = float(headerl[3])
+        low = float(headerl[4])
+        close = float(headerl[5])
+
+        # 1. The average closing price for BTC in 2020.
+        if year == '2020':
+            yield ('Average closing price for 2020', None), close
+
+        # 2. The number of dates for which the closing price was over 60000 USD.
+        if close > 60000:
+            yield ('Number of dates with high closing price', None), 1
+
+        # 3. The number of days for which the closing price was less than the average of the highest and lowest price.
+        if close < (high + low) / 2:
+            yield('No of days with price below avg', None), 1
+
+        # 4. The ten highest closing prices and the corresponding dates.
+        yield ('Top 10', None), (close, date)
+
+        # 5. The year and month for which the average closing price was between 20000 and 22000 USD.
+        yield ('20000 <= average <= 220000', year_month), close
+
+    def reducer(self, key, values):
+        if key[0] == 'Average closing price for 2020':
+            yield key, sum(values)/ len(values)
+        elif key[0] == 'Number of dates with high closing price':
+            yield key, sum(values), 2
+        elif key[0] == 'No of days with price below avg':
+            yield key, sum(values)
+        elif key[0] == 'Top 10':
+            top = heapq.nlargest(10, values)
+            for close, date in top:
+                yield 'Top 10 closing prices', (date, close)
+        elif key[0] == '20000 <= average <= 220000':
+            if 20000 <= avg <= 22000:
+                yield key[1]
+
+
+if __name__ == '__main__':
+    BTC.run()
