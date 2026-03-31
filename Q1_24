@@ -1,0 +1,50 @@
+import threading
+import time
+from time import sleep
+import random
+
+
+N = 3               # Number of producers
+BUF_SIZE = 5        # Size of shared buffer
+buf = []            # Shared buffer
+NITER = 10
+
+empty = threading.Semaphore(BUF_SIZE)  # Tracks empty slots
+full = threading.Semaphore(0)          # Tracks filled slots
+buf_lock = threading.Lock()            # Mutex for buffer access
+
+
+def producer(pid): #Each producer iterates 2*N times, producing items to buf
+    for i in range(2 * N):
+        item = f"P{pid}-{i}"               # Example item id
+        empty.acquire()                     # Wait if buffer is full
+        with buf_lock:                      # Lock buffer for safe access
+            buf.append(item)
+            print(f"Producer {pid} produced item {item} to buf")
+        full.release()                      # Signal that a new item is available
+        time.sleep(random.uniform(0.1, 0.3))  # Simulate variable production time
+
+
+def consumer(cid): # Each consumer iterates N times, consuming items from buf.
+    for i in range(N):
+        full.acquire()                      # Wait if buffer is empty
+        with buf_lock:                      # Lock buffer for safe access
+            item = buf.pop(0)
+            print(f"Consumer {cid} consumed item {item} from buf")
+        empty.release()                     # Signal that a slot is now empty
+        time.sleep(random.uniform(0.1, 0.3))  # Simulate variable consumption time
+
+
+# Create and start threads
+producers = [threading.Thread(target=producer, args=(i,)) for i in range(N)]
+consumers = [threading.Thread(target=consumer, args=(i,)) for i in range(2 * N)]
+
+# Start all producer and consumer threads
+for t in producers + consumers:
+    t.start()
+
+# Wait for all threads to finish
+for t in producers + consumers:
+    t.join()
+
+print("All producers and consumers have finished.")
