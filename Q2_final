@@ -1,0 +1,62 @@
+import concurrent.futures as cf
+import time
+import math
+
+max_num = 10000
+n_thr = 4
+
+#Checks if a number is prime
+def is_prime(num):
+    if num <= 1: return False
+    if num <= 3: return True
+    if num % 2 == 0 or num % 3 == 0: return False
+    for i in range(5, int(math.sqrt(num)) + 1, 6):
+        if num % i == 0 or num % (i + 2) == 0: return False
+    return True
+
+
+def check_twin_prime_parallel(n):
+    if not is_prime(n):
+        return False
+    
+    # Check if either (n-2, n) or (n, n+2) is a twin prime pair
+    # We use threads to check n-2 and n+2 concurrently
+    with cf.ThreadPoolExecutor(max_workers=4) as executor:
+        future1 = executor.submit(is_prime, n - 2)
+        future2 = executor.submit(is_prime, n + 2)
+        
+        # If either n-2 or n+2 is prime, n is part of a twin pair
+        if future1.result() or future2.result():
+            return True
+    return False
+
+
+#  Returns the number of twin primes numbers in the range rng = (low, high)
+def rprimes(rng: tuple):
+    num = 0
+    for n in range(rng[0], rng[1]):
+        if is_prime(n):
+            num += 1
+    return num
+
+
+#  Breaks the range [0, rng) into num equally sized subranges
+def calc_ranges(rmax, num):
+    ranges = []
+    idx, rsize = 0, rmax // num
+    for _ in range(num - 1):
+        ranges.append((idx, idx + rsize - 1))
+        idx += rsize
+    ranges.append((idx, rmax))
+    return ranges
+
+
+ranges = calc_ranges(max_num, n_thr)
+
+start = time.perf_counter()
+with cf.ThreadPoolExecutor(max_workers=n_thr) as executor:
+    results = executor.map(rprimes, ranges)
+r = sum(results)
+end = time.perf_counter()
+
+print(f'Number of twin primes up to {max_num}: {r} ({round(end - start, 2)} second(s))')
